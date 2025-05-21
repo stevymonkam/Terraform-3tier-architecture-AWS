@@ -24,13 +24,13 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating VPC
-  resource "aws_vpc" "demovpc" {
-    cidr_block       = "${var.vpc_cidr}"
-    instance_tenancy = "default"
+ resource "aws_vpc" "vpc" {
+  cidr_block       = var.vpc_cidr
+
   tags = {
-    Name = "Demo VPC"
+    Name = "tp-aws-vpc"
   }
-  }
+}
   ```
   
 **Step 2:- Create a file for the Subnet**
@@ -40,63 +40,66 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating 1st web subnet 
-  resource "aws_subnet" "public-subnet-1" {
-    vpc_id                  = "${aws_vpc.demovpc.id}"
-    cidr_block             = "${var.subnet_cidr}"
-    map_public_ip_on_launch = true
-    availability_zone = "us-east-1a"
+ resource "aws_subnet" "public_subnet_1" {
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.subnet_cidr
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
+
   tags = {
-    Name = "Web Subnet 1"
+    Name = "Public Subnet 1"
   }
-  }
-  # Creating 2nd web subnet 
-  resource "aws_subnet" "public-subnet-2" {
-    vpc_id                  = "${aws_vpc.demovpc.id}"
-    cidr_block             = "${var.subnet1_cidr}"
-    map_public_ip_on_launch = true
-    availability_zone = "us-east-1b"
+}
+resource "aws_subnet" "public_subnet_2" {
+  vpc_id     = aws_vpc.vpc.id
+  cidr_block = var.subnet1_cidr
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = true
+
   tags = {
-    Name = "Web Subnet 2"
+    Name = "Public Subnet 2"
   }
-  }
-  # Creating 1st application subnet 
-  resource "aws_subnet" "application-subnet-1" {
-    vpc_id                  = "${aws_vpc.demovpc.id}"
-    cidr_block             = "${var.subnet2_cidr}"
-    map_public_ip_on_launch = false
-    availability_zone = "us-east-1a"
+}
+resource "aws_subnet" "private_subnet_1" {
+  vpc_id     = aws_vpc.vpc.id
+  cidr_block = var.subnet2_cidr
+  availability_zone       = "us-east-1a"
+   map_public_ip_on_launch = false
+ 
+
   tags = {
-    Name = "Application Subnet 1"
+    Name = "Private Subnet 1"
   }
-  }
-  # Creating 2nd application subnet 
-  resource "aws_subnet" "application-subnet-2" {
-    vpc_id                  = "${aws_vpc.demovpc.id}"
-    cidr_block             = "${var.subnet3_cidr}"
-    map_public_ip_on_launch = false
-    availability_zone = "us-east-1b"
+}
+
+resource "aws_subnet" "private_subnet_2" {
+  vpc_id     = aws_vpc.vpc.id
+  cidr_block = var.subnet3_cidr
+  availability_zone       = "us-east-1b"
+   map_public_ip_on_launch = false
+
   tags = {
-    Name = "Application Subnet 2"
+    Name = "Private Subnet 2"
   }
-  }
-  # Create Database Private Subnet
-  resource "aws_subnet" "database-subnet-1" {
-    vpc_id            = "${aws_vpc.demovpc.id}"
-    cidr_block        = "${var.subnet4_cidr}"
-    availability_zone = "us-east-1a"
-  tags = {
-    Name = "Database Subnet 1"
-  }
-  }
-  # Create Database Private Subnet
-  resource "aws_subnet" "database-subnet-2" {
-    vpc_id            = "${aws_vpc.demovpc.id}"
-    cidr_block        = "${var.subnet5_cidr}"
-    availability_zone = "us-east-1a"
-  tags = {
-    Name = "Database Subnet 1"
-  }
-  }
+}
+
+resource "aws_subnet" "database-subnet-1" {
+  vpc_id     = aws_vpc.vpc.id
+  cidr_block = var.subnet4_cidr
+  availability_zone = "us-east-1a"
+tags = {
+  Name = "Database Subnet 1"
+}
+}
+# Create Database Private Subnet
+resource "aws_subnet" "database-subnet-2" {
+  vpc_id     = aws_vpc.vpc.id
+  cidr_block = var.subnet5_cidr
+  availability_zone = "us-east-1b"
+tags = {
+  Name = "Database Subnet 2"
+}
+}
   ```
   
 **Step 3:- Create a file for the Internet Gateway**
@@ -105,9 +108,13 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating Internet Gateway 
-  resource "aws_internet_gateway" "demogateway" {
-    vpc_id = "${aws_vpc.demovpc.id}"
+ resource "aws_internet_gateway" "ig1" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "Internet Gateway"
   }
+}
   ```
 
 **Step 4:- Create a file for the Route table**
@@ -116,26 +123,30 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating Route Table
-  resource "aws_route_table" "route" {
-    vpc_id = "${aws_vpc.demovpc.id}"
+ resource "aws_route_table" "public-rt" {
+  vpc_id = aws_vpc.vpc.id
+
   route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.demogateway.id}"
-    }
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.ig1.id
+  }
+
   tags = {
-        Name = "Route to internet"
-    }
+    Name = "Route Table Public"
   }
-  # Associating Route Table
-  resource "aws_route_table_association" "rt1" {
-    subnet_id = "${aws_subnet.demosubnet.id}"
-    route_table_id = "${aws_route_table.route.id}"
-  }
-  # Associating Route Table
-  resource "aws_route_table_association" "rt2" {
-    subnet_id = "${aws_subnet.demosubnet1.id}"
-    route_table_id = "${aws_route_table.route.id}"
-  }
+}
+
+resource "aws_route_table_association" "public_subnet_1_assoc" {
+  subnet_id      = aws_subnet.public_subnet_1.id
+  route_table_id = aws_route_table.public-rt.id
+}
+
+resource "aws_route_table_association" "public_subnet_2_assoc" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.public-rt.id
+}
+
+
   ```
 * In the above code, I am creating a new route table and forwarding all the requests to the 0.0.0.0/0 CIDR block.
 * I am also attaching this route table to the subnet created earlier. So, it will work as the Public Subnet
@@ -146,33 +157,51 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating 1st EC2 instance in Public Subnet
-  resource "aws_instance" "demoinstance" {
-    ami                         = "ami-087c17d1fe0178315"
-    instance_type               = "t2.micro"
-    count                       = 1
-    key_name                    = "tests"
-    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
-    subnet_id                   = "${aws_subnet.demoinstance.id}"
-    associate_public_ip_address = true
-    user_data                   = "${file("data.sh")}"
-  tags = {
-    Name = "My Public Instance"
+ 
+resource "aws_instance" "my1ec2" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t2.nano"
+  key_name               = "devops-stevy"
+  subnet_id              = aws_subnet.public_subnet_1.id
+  security_groups = [aws_security_group.allow_ssh_http_https.id]
+  tags                   = { 
+                            Name = "Ec21"
+                            }
+                     
+  user_data = file("data.sh")
+}
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
   }
-  # Creating 2nd EC2 instance in Public Subnet
-  resource "aws_instance" "demoinstance1" {
-    ami                         = "ami-087c17d1fe0178315"
-    instance_type               = "t2.micro"
-    count                       = 1
-    key_name                    = "tests"
-    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
-    subnet_id                   = "${aws_subnet.demoinstance.id}"
-    associate_public_ip_address = true
-    user_data                   = "${file("data.sh")}"
-  tags = {
-    Name = "My Public Instance 2"
-  }
-  }
+
+  owners = ["amazon"]
+}
+
+
+resource "aws_instance" "my2ec2" {
+  ami                    = data.aws_ami.amazon_linux.id
+  instance_type          = "t2.nano"
+  key_name               = "devops-stevy"
+  subnet_id              = aws_subnet.public_subnet_2.id
+  security_groups = [aws_security_group.allow_ssh_http_https.id]
+  tags                   = { 
+                            Name = "Ec22"
+                            }
+                     
+ user_data = file("data.sh")
+}
+
+
   ```
 
 * I have used the userdata to configure the EC2 instance, I will discuss data.sh file later in the article
@@ -183,42 +212,83 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating Security Group 
-  resource "aws_security_group" "demosg" {
-    vpc_id = "${aws_vpc.demovpc.id}"
-  # Inbound Rules
-  # HTTP access from anywhere
+ resource "aws_security_group" "allow_ssh_http_https" {
+  name        = "stevy-sg"
+  description = "Allow SSH, HTTP and HTTPS inbound traffic"
+  vpc_id = aws_vpc.vpc.id 
+
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # HTTPS access from anywhere
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # SSH access from anywhere
-  ingress {
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # Outbound Rules
-  # Internet access to anywhere
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # Only from ALB
+  }
+
+  ingress {
+    description = "HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = {
-    Name = "Web SG"
+}
+
+
+resource "aws_security_group" "alb_sg" {
+  name        = "alb-sg"
+  description = "Allow HTTP from anywhere to ALB"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Public access to ALB
   }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
   }
+}
+
+# Create Security Group for RDS Instance
+resource "aws_security_group" "rds_security_group" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  # Inbound rule to accept connections from EC2 security group on port 3306
+  ingress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    security_groups = [aws_security_group.allow_ssh_http_https.id]
+  }
+
+  egress {
+    from_port   = 3306
+    to_port     = 3306
+    protocol    = "tcp"
+    security_groups = [aws_security_group.allow_ssh_http_https.id]
+  }
+}
   ```
 
 * I have opened 80,443 & 22 ports for the inbound connection and I have opened all the ports for the outbound connection
@@ -227,30 +297,6 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
 * Create database_sg.tf file and add the below code to it
 
-  ```
-  # Create Database Security Group
-  resource "aws_security_group" "database-sg" {
-    name        = "Database SG"
-    description = "Allow inbound traffic from application layer"
-    vpc_id      = aws_vpc.demovpc.id
-  ingress {
-    description     = "Allow traffic from application layer"
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.demosg.id]
-  }
-  egress {
-    from_port   = 32768
-    to_port     = 65535
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  tags = {
-    Name = "Database SG"
-  }
-  }
-  ```
 * I have opened 3306 ports for the inbound connection and I have opened all the ports for the outbound connection.
 
 **Step 8:- Create a file Application Load Balancer**
@@ -259,44 +305,43 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating External LoadBalancer
-  resource "aws_lb" "external-alb" {
-    name               = "External LB"
-    internal           = false
-    load_balancer_type = "application"
-    security_groups    = [aws_security_group.demosg.id]
-    subnets            = [aws_subnet.public-subnet-1.id, aws_subnet.public-subnet-1.id]
-  }
-  resource "aws_lb_target_group" "target-elb" {
-    name     = "ALB TG"
-    port     = 80
-    protocol = "HTTP"
-    vpc_id   = aws_vpc.demovpc.id
-  }
-  resource "aws_lb_target_group_attachment" "attachment" {
-    target_group_arn = aws_lb_target_group.external-alb.arn
-    target_id        = aws_instance.demoinstance.id
-    port             = 80
-  depends_on = [
-    aws_instance.demoinstance,
-  ]
-  }
-  resource "aws_lb_target_group_attachment" "attachment" {
-    target_group_arn = aws_lb_target_group.external-alb.arn
-    target_id        = aws_instance.demoinstance1.id
-    port             = 80
-  depends_on = [
-    aws_instance.demoinstance1,
-  ]
-  }
-  resource "aws_lb_listener" "external-elb" {
-    load_balancer_arn = aws_lb.external-alb.arn
-    port              = "80"
-    protocol          = "HTTP"
+ resource "aws_lb" "alb" {
+  name               = "my-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = [aws_subnet.public_subnet_1.id, aws_subnet.public_subnet_2.id]
+}
+
+resource "aws_lb_target_group" "tg" {
+  name     = "my-targets"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.vpc.id
+}
+
+resource "aws_lb_listener" "listener" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.external-alb.arn
+    target_group_arn = aws_lb_target_group.tg.arn
   }
-  }
+}
+
+resource "aws_lb_target_group_attachment" "my1ec2" {
+  target_group_arn = aws_lb_target_group.tg.arn
+  target_id        = aws_instance.my1ec2.id
+  port             = 80
+}
+
+resource "aws_lb_target_group_attachment" "my2ec2" {
+  target_group_arn = aws_lb_target_group.tg.arn
+  target_id        = aws_instance.my2ec2.id
+  port             = 80
+}
   ```
 * The above load balancer is of type external
 * Load balancer type is set to application
@@ -309,26 +354,30 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating RDS Instance
-  resource "aws_db_subnet_group" "default" {
-    name       = "main"
-    subnet_ids = [aws_subnet.database-subnet-1.id, aws_subnet.database-subnet-1.id]
+  # Create DB Subnet Group
+resource "aws_db_subnet_group" "my_db_subnet_group" {
+  name       = "my-db-subnet-group"
+  subnet_ids = [aws_subnet.database-subnet-1.id, aws_subnet.database-subnet-2.id]
+
   tags = {
-    Name = "My DB subnet group"
+    Name = "my-db-subnet-group"
   }
-  }
-  resource "aws_db_instance" "default" {
-    allocated_storage      = 10
-    db_subnet_group_name   = aws_db_subnet_group.default.id
-    engine                 = "mysql"
-    engine_version         = "8.0.20"
-    instance_class         = "db.t2.micro"
-    multi_az               = true
-    name                   = "mydb"
-    username               = "username"
-    password               = "password"
-    skip_final_snapshot    = true
-    vpc_security_group_ids = [aws_security_group.database-sg.id]
-  }
+}
+
+# Create RDS Instance
+resource "aws_db_instance" "my_rds" {
+  identifier              = "my-rds"
+  engine                  = "mysql"
+  engine_version          = "5.7"
+  instance_class          = "db.t3.micro"
+  allocated_storage       = 20
+  storage_type            = "gp2"
+  username                = "admin"
+  password                = "password"
+  vpc_security_group_ids  = [aws_security_group.rds_security_group.id]
+  db_subnet_group_name    = aws_db_subnet_group.my_db_subnet_group.name
+  multi_az                = true
+}
   ```
 * In the above code, you need to change the value of username & password
 * multi-az is set to true for the high availability
