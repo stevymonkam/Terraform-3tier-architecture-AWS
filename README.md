@@ -24,13 +24,13 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating VPC
- resource "aws_vpc" "vpc" {
-  cidr_block       = var.vpc_cidr
-
+  resource "aws_vpc" "demovpc" {
+    cidr_block       = "${var.vpc_cidr}"
+    instance_tenancy = "default"
   tags = {
-    Name = "tp-aws-vpc"
+    Name = "Demo VPC"
   }
-}
+  }
   ```
   
 **Step 2:- Create a file for the Subnet**
@@ -40,67 +40,63 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 
   ```
   # Creating 1st web subnet 
-  resource "aws_subnet" "public_subnet_1" {
-  vpc_id                  = aws_vpc.vpc.id
-  cidr_block              = var.subnet_cidr
-  availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = true
-
+  resource "aws_subnet" "public-subnet-1" {
+    vpc_id                  = "${aws_vpc.demovpc.id}"
+    cidr_block             = "${var.subnet_cidr}"
+    map_public_ip_on_launch = true
+    availability_zone = "us-east-1a"
   tags = {
-    Name = "Public Subnet 1"
+    Name = "Web Subnet 1"
   }
-}
-resource "aws_subnet" "public_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet1_cidr
-  availability_zone       = "us-east-1b"
-  map_public_ip_on_launch = true
-
+  }
+  # Creating 2nd web subnet 
+  resource "aws_subnet" "public-subnet-2" {
+    vpc_id                  = "${aws_vpc.demovpc.id}"
+    cidr_block             = "${var.subnet1_cidr}"
+    map_public_ip_on_launch = true
+    availability_zone = "us-east-1b"
   tags = {
-    Name = "Public Subnet 2"
+    Name = "Web Subnet 2"
   }
-}
-resource "aws_subnet" "private_subnet_1" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet2_cidr
-  availability_zone       = "us-east-1a"
-   map_public_ip_on_launch = false
- 
-
+  }
+  # Creating 1st application subnet 
+  resource "aws_subnet" "application-subnet-1" {
+    vpc_id                  = "${aws_vpc.demovpc.id}"
+    cidr_block             = "${var.subnet2_cidr}"
+    map_public_ip_on_launch = false
+    availability_zone = "us-east-1a"
   tags = {
-    Name = "Private Subnet 1"
+    Name = "Application Subnet 1"
   }
-}
-
-resource "aws_subnet" "private_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet3_cidr
-  availability_zone       = "us-east-1b"
-   map_public_ip_on_launch = false
-
+  }
+  # Creating 2nd application subnet 
+  resource "aws_subnet" "application-subnet-2" {
+    vpc_id                  = "${aws_vpc.demovpc.id}"
+    cidr_block             = "${var.subnet3_cidr}"
+    map_public_ip_on_launch = false
+    availability_zone = "us-east-1b"
   tags = {
-    Name = "Private Subnet 2"
+    Name = "Application Subnet 2"
   }
-}
-
-resource "aws_subnet" "database-subnet-1" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet4_cidr
-  availability_zone = "us-east-1a"
-tags = {
-  Name = "Database Subnet 1"
-}
-}
-# Create Database Private Subnet
-resource "aws_subnet" "database-subnet-2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet5_cidr
-  availability_zone = "us-east-1b"
-tags = {
-  Name = "Database Subnet 2"
-}
-}
-  
+  }
+  # Create Database Private Subnet
+  resource "aws_subnet" "database-subnet-1" {
+    vpc_id            = "${aws_vpc.demovpc.id}"
+    cidr_block        = "${var.subnet4_cidr}"
+    availability_zone = "us-east-1a"
+  tags = {
+    Name = "Database Subnet 1"
+  }
+  }
+  # Create Database Private Subnet
+  resource "aws_subnet" "database-subnet-2" {
+    vpc_id            = "${aws_vpc.demovpc.id}"
+    cidr_block        = "${var.subnet5_cidr}"
+    availability_zone = "us-east-1a"
+  tags = {
+    Name = "Database Subnet 1"
+  }
+  }
   ```
   
 **Step 3:- Create a file for the Internet Gateway**
@@ -109,13 +105,9 @@ tags = {
 
   ```
   # Creating Internet Gateway 
-  resource "aws_internet_gateway" "ig1" {
-  vpc_id = aws_vpc.vpc.id
-
-  tags = {
-    Name = "Internet Gateway"
+  resource "aws_internet_gateway" "demogateway" {
+    vpc_id = "${aws_vpc.demovpc.id}"
   }
-}
   ```
 
 **Step 4:- Create a file for the Route table**
@@ -124,30 +116,26 @@ tags = {
 
   ```
   # Creating Route Table
- resource "aws_route_table" "public-rt" {
-  vpc_id = aws_vpc.vpc.id
-
+  resource "aws_route_table" "route" {
+    vpc_id = "${aws_vpc.demovpc.id}"
   route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.ig1.id
-  }
-
+        cidr_block = "0.0.0.0/0"
+        gateway_id = "${aws_internet_gateway.demogateway.id}"
+    }
   tags = {
-    Name = "Route Table Public"
+        Name = "Route to internet"
+    }
   }
-}
-
- # Associating Route Table
-resource "aws_route_table_association" "public_subnet_1_assoc" {
-  subnet_id      = aws_subnet.public_subnet_1.id
-  route_table_id = aws_route_table.public-rt.id
-}
   # Associating Route Table
-resource "aws_route_table_association" "public_subnet_2_assoc" {
-  subnet_id      = aws_subnet.public_subnet_2.id
-  route_table_id = aws_route_table.public-rt.id
-}
-
+  resource "aws_route_table_association" "rt1" {
+    subnet_id = "${aws_subnet.demosubnet.id}"
+    route_table_id = "${aws_route_table.route.id}"
+  }
+  # Associating Route Table
+  resource "aws_route_table_association" "rt2" {
+    subnet_id = "${aws_subnet.demosubnet1.id}"
+    route_table_id = "${aws_route_table.route.id}"
+  }
   ```
 * In the above code, I am creating a new route table and forwarding all the requests to the 0.0.0.0/0 CIDR block.
 * I am also attaching this route table to the subnet created earlier. So, it will work as the Public Subnet
@@ -158,49 +146,33 @@ resource "aws_route_table_association" "public_subnet_2_assoc" {
 
   ```
   # Creating 1st EC2 instance in Public Subnet
-  resource "aws_instance" "my1ec2" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t2.nano"
-  key_name               = "devops-stevy"
-  subnet_id              = aws_subnet.public_subnet_1.id
-  security_groups = [aws_security_group.allow_ssh_http_https.id]
-  tags                   = { 
-                            Name = "Ec21"
-                            }
-                     
-  user_data = file("data.sh")
-}
+  resource "aws_instance" "demoinstance" {
+    ami                         = "ami-087c17d1fe0178315"
+    instance_type               = "t2.micro"
+    count                       = 1
+    key_name                    = "tests"
+    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
+    subnet_id                   = "${aws_subnet.demoinstance.id}"
+    associate_public_ip_address = true
+    user_data                   = "${file("data.sh")}"
+  tags = {
+    Name = "My Public Instance"
+  }
+  }
   # Creating 2nd EC2 instance in Public Subnet
-  resource "aws_instance" "my2ec2" {
-  ami                    = data.aws_ami.amazon_linux.id
-  instance_type          = "t2.nano"
-  key_name               = "devops-stevy"
-  subnet_id              = aws_subnet.public_subnet_2.id
-  security_groups = [aws_security_group.allow_ssh_http_https.id]
-  tags                   = { 
-                            Name = "Ec22"
-                            }
-                     
- user_data = file("data.sh")
-}
-
-# Creating data_ami
-data "aws_ami" "amazon_linux" {
-  most_recent = true
-
-  filter {
-    name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  resource "aws_instance" "demoinstance1" {
+    ami                         = "ami-087c17d1fe0178315"
+    instance_type               = "t2.micro"
+    count                       = 1
+    key_name                    = "tests"
+    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
+    subnet_id                   = "${aws_subnet.demoinstance.id}"
+    associate_public_ip_address = true
+    user_data                   = "${file("data.sh")}"
+  tags = {
+    Name = "My Public Instance 2"
   }
-
-  filter {
-    name   = "virtualization-type"
-    values = ["hvm"]
   }
-
-  owners = ["amazon"]
-}
-
   ```
 
 * I have used the userdata to configure the EC2 instance, I will discuss data.sh file later in the article
