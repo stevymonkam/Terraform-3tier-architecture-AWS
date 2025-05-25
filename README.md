@@ -209,78 +209,95 @@ resource "aws_instance" "my2ec2" {
 
 **Step 6:- Create a file for Security Group for the FrontEnd tier**
 
-* Create web_sg.tf file and add the below code to it
+* Create sg.tf file and add the below code to it
 
-  ```
+```hcl 
   # Creating Security Group 
-  resource "aws_security_group" "demosg" {
-    vpc_id = "${aws_vpc.demovpc.id}"
-  # Inbound Rules
-  # HTTP access from anywhere
+  resource "aws_security_group" "allow_ssh_http_https" {
+  name        = "stevy-sg"
+  description = "Allow SSH, HTTP and HTTPS inbound traffic"
+  vpc_id      = aws_vpc.vpc.id
+
   ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # HTTPS access from anywhere
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-  # SSH access from anywhere
-  ingress {
+    description = "SSH from anywhere"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  # Outbound Rules
-  # Internet access to anywhere
+
+  ingress {
+    description     = "HTTP from anywhere"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb_sg.id] # Only from ALB
+  }
+
+  ingress {
+    description = "HTTPS from anywhere"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 0
     to_port     = 0
     protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = {
-    Name = "Web SG"
-  }
-  }
-  ```
+}
+```
 
 * I have opened 80,443 & 22 ports for the inbound connection and I have opened all the ports for the outbound connection
 
-**Step 7:- Create a file for Security Group for the Database tier**
+**Step 7:- Create a file for Security Group for the Database tier and ALB**
 
 * Create database_sg.tf file and add the below code to it
 
-  ```
-  # Create Database Security Group
-  resource "aws_security_group" "database-sg" {
-    name        = "Database SG"
-    description = "Allow inbound traffic from application layer"
-    vpc_id      = aws_vpc.demovpc.id
+ ```hcl 
+  # Create Security Group for RDS Instance
+resource "aws_security_group" "rds_security_group" {
+  vpc_id = aws_vpc.vpc.id
+
+  # Inbound rule to accept connections from EC2 security group on port 3306
   ingress {
-    description     = "Allow traffic from application layer"
     from_port       = 3306
     to_port         = 3306
     protocol        = "tcp"
-    security_groups = [aws_security_group.demosg.id]
+    security_groups = [aws_security_group.allow_ssh_http_https.id]
   }
+
   egress {
-    from_port   = 32768
-    to_port     = 65535
+    from_port       = 3306
+    to_port         = 3306
+    protocol        = "tcp"
+    security_groups = [aws_security_group.allow_ssh_http_https.id]
+  }
+}
+# Create Security Group for ALB
+resource "aws_security_group" "alb_sg" {
+  name        = "alb-sg"
+  description = "Allow HTTP from anywhere to ALB"
+  vpc_id      = aws_vpc.vpc.id
+
+  ingress {
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"] # Public access to ALB
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  tags = {
-    Name = "Database SG"
-  }
-  }
-  ```
+}
+ ```
 * I have opened 3306 ports for the inbound connection and I have opened all the ports for the outbound connection.
 
 **Step 8:- Create a file Application Load Balancer**
