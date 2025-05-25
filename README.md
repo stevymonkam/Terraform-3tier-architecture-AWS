@@ -36,7 +36,8 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 * For this project, I will create total 6 subnets for the front-end tier and back-end tier with a mixture of public & private subnet
 * Create subnet.tf file and add the below code to it
 
-  ```# Creating 1st public subnet 
+```hcl
+# Creating 1st public subnet 
 resource "aws_subnet" "public_subnet_1" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = var.subnet_cidr
@@ -47,10 +48,11 @@ resource "aws_subnet" "public_subnet_1" {
     Name = "Public Subnet 1"
   }
 }
- # Creating 2st public subnet 
+
+# Creating 2nd public subnet 
 resource "aws_subnet" "public_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet1_cidr
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.subnet1_cidr
   availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
@@ -58,48 +60,54 @@ resource "aws_subnet" "public_subnet_2" {
     Name = "Public Subnet 2"
   }
 }
- # Creating 1st private subnet 
+
+# Creating 1st private subnet 
 resource "aws_subnet" "private_subnet_1" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet2_cidr
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.subnet2_cidr
   availability_zone       = "us-east-1a"
-   map_public_ip_on_launch = false
- 
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "Private Subnet 1"
   }
 }
- # Creating 2st private subnet 
+
+# Creating 2nd private subnet 
 resource "aws_subnet" "private_subnet_2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet3_cidr
+  vpc_id                  = aws_vpc.vpc.id
+  cidr_block              = var.subnet3_cidr
   availability_zone       = "us-east-1b"
-   map_public_ip_on_launch = false
+  map_public_ip_on_launch = false
 
   tags = {
     Name = "Private Subnet 2"
   }
 }
-# Creating 1st database-private subnet 
-resource "aws_subnet" "database-subnet-1" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet4_cidr
+
+# Creating 1st database subnet 
+resource "aws_subnet" "database_subnet_1" {
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = var.subnet4_cidr
   availability_zone = "us-east-1a"
-tags = {
-  Name = "Database Subnet 1"
+
+  tags = {
+    Name = "Database Subnet 1"
+  }
 }
-}
-# Creating 2st database-private subnet
-resource "aws_subnet" "database-subnet-2" {
-  vpc_id     = aws_vpc.vpc.id
-  cidr_block = var.subnet5_cidr
+
+# Creating 2nd database subnet 
+resource "aws_subnet" "database_subnet_2" {
+  vpc_id            = aws_vpc.vpc.id
+  cidr_block        = var.subnet5_cidr
   availability_zone = "us-east-1b"
-tags = {
-  Name = "Database Subnet 2"
-}
+
+  tags = {
+    Name = "Database Subnet 2"
+  }
 }
 ```
+
   
 **Step 3:- Create a file for the Internet Gateway**
 
