@@ -36,8 +36,7 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 * For this project, I will create total 6 subnets for the front-end tier and back-end tier with a mixture of public & private subnet
 * Create subnet.tf file and add the below code to it
 
-  ```
-# Creating 1st public subnet 
+  ```# Creating 1st public subnet 
 resource "aws_subnet" "public_subnet_1" {
   vpc_id                  = aws_vpc.vpc.id
   cidr_block              = var.subnet_cidr
