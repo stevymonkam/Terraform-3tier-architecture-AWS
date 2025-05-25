@@ -102,11 +102,6 @@ tags = {
   Name = "Database Subnet 2"
 }
 }
- 
- 
-  
-  
-  
   ```
   
 **Step 3:- Create a file for the Internet Gateway**
