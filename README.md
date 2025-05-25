@@ -23,14 +23,13 @@ In this tutorial, I will deploy a three-tier application in AWS using Terraform.
 * Create vpc.tf file and add the below code to it
 
   ``` # Creating VPC
- resource "aws_vpc" "vpc" {
-  cidr_block       = var.vpc_cidr
-
-  tags = {
-    Name = "tp-aws-vpc"
+       resource "aws_vpc" "vpc" {
+       cidr_block       = var.vpc_cidr
+       tags = {
+          Name = "tp-aws-vpc"
+       }
   }
-}
-```
+  ```
   
 **Step 2:- Create a file for the Subnet**
 
