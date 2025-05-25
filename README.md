@@ -159,36 +159,51 @@ resource "aws_route_table_association" "public_subnet_2_assoc" {
 
 * Create ec2.tf file and add the below code to it
 
-  ```
-  # Creating 1st EC2 instance in Public Subnet
-  resource "aws_instance" "demoinstance" {
-    ami                         = "ami-087c17d1fe0178315"
-    instance_type               = "t2.micro"
-    count                       = 1
-    key_name                    = "tests"
-    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
-    subnet_id                   = "${aws_subnet.demoinstance.id}"
-    associate_public_ip_address = true
-    user_data                   = "${file("data.sh")}"
+
+```hcl 
+resource "aws_instance" "my1ec2" {
+  ami             = data.aws_ami.amazon_linux.id
+  instance_type   = "t2.nano"
+  key_name        = "devops-stevy"
+  subnet_id       = aws_subnet.public_subnet_1.id
+  security_groups = [aws_security_group.allow_ssh_http_https.id]
   tags = {
-    Name = "My Public Instance"
+    Name = "Ec21"
   }
+
+  user_data = file("data.sh")
+}
+
+data "aws_ami" "amazon_linux" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
-  # Creating 2nd EC2 instance in Public Subnet
-  resource "aws_instance" "demoinstance1" {
-    ami                         = "ami-087c17d1fe0178315"
-    instance_type               = "t2.micro"
-    count                       = 1
-    key_name                    = "tests"
-    vpc_security_group_ids      = ["${aws_security_group.demosg.id}"]
-    subnet_id                   = "${aws_subnet.demoinstance.id}"
-    associate_public_ip_address = true
-    user_data                   = "${file("data.sh")}"
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+
+  owners = ["amazon"]
+}
+
+
+resource "aws_instance" "my2ec2" {
+  ami             = data.aws_ami.amazon_linux.id
+  instance_type   = "t2.nano"
+  key_name        = "devops-stevy"
+  subnet_id       = aws_subnet.public_subnet_2.id
+  security_groups = [aws_security_group.allow_ssh_http_https.id]
   tags = {
-    Name = "My Public Instance 2"
+    Name = "Ec22"
   }
-  }
-  ```
+
+  user_data = file("data.sh")
+}
+```
 
 * I have used the userdata to configure the EC2 instance, I will discuss data.sh file later in the article
 
