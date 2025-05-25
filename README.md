@@ -127,29 +127,31 @@ resource "aws_internet_gateway" "ig1" {
 
 * Create route_table_public.tf file and add the below code to it
 
-  ```
+```hcl
   # Creating Route Table
-  resource "aws_route_table" "route" {
-    vpc_id = "${aws_vpc.demovpc.id}"
+ resource "aws_route_table" "public-rt" {
+  vpc_id = aws_vpc.vpc.id
+
   route {
-        cidr_block = "0.0.0.0/0"
-        gateway_id = "${aws_internet_gateway.demogateway.id}"
-    }
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.ig1.id
+  }
+
   tags = {
-        Name = "Route to internet"
-    }
+    Name = "Route Table Public"
   }
-  # Associating Route Table
-  resource "aws_route_table_association" "rt1" {
-    subnet_id = "${aws_subnet.demosubnet.id}"
-    route_table_id = "${aws_route_table.route.id}"
-  }
-  # Associating Route Table
-  resource "aws_route_table_association" "rt2" {
-    subnet_id = "${aws_subnet.demosubnet1.id}"
-    route_table_id = "${aws_route_table.route.id}"
-  }
-  ```
+}
+
+resource "aws_route_table_association" "public_subnet_1_assoc" {
+  subnet_id      = aws_subnet.public_subnet_1.id
+  route_table_id = aws_route_table.public-rt.id
+}
+
+resource "aws_route_table_association" "public_subnet_2_assoc" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.public-rt.id
+}
+ ```
 * In the above code, I am creating a new route table and forwarding all the requests to the 0.0.0.0/0 CIDR block.
 * I am also attaching this route table to the subnet created earlier. So, it will work as the Public Subnet
 
