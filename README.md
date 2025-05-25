@@ -113,11 +113,14 @@ resource "aws_subnet" "database_subnet_2" {
 
 * Create igw.tf file and add the below code to it
 
-  ```
-  # Creating Internet Gateway 
-  resource "aws_internet_gateway" "demogateway" {
-    vpc_id = "${aws_vpc.demovpc.id}"
+```hcl
+resource "aws_internet_gateway" "ig1" {
+  vpc_id = aws_vpc.vpc.id
+
+  tags = {
+    Name = "Internet Gateway"
   }
+}
   ```
 
 **Step 4:- Create a file for the Route table**
